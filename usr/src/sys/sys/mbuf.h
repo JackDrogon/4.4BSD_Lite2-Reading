@@ -86,6 +86,9 @@ struct m_ext {
 	u_int ext_size;     /* size of buffer, for ext_free */
 };
 
+// mbuf有四种模式
+// 操作函数详见: kern/uipc_mbuf.c
+
 struct mbuf {
 	struct m_hdr m_hdr;
 	union {
