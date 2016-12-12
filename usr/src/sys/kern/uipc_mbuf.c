@@ -55,7 +55,7 @@ void mbinit()
 {
 	int s;
 
-	s = splimp();
+	s = splimp(); // 用来改变CPU优先级，防止被中断
 	if (m_clalloc(max(4096 / CLBYTES, 1), M_DONTWAIT) == 0)
 		goto bad;
 	splx(s);
@@ -102,7 +102,9 @@ int nowait;
  * When MGET failes, ask protocols to free space when short of memory,
  * then re-attempt to allocate an mbuf.
  */
-struct mbuf *m_retry(i, t) int i, t;
+// MGET分配内存失败的时候，重试的，此处设置了m_retry宏返回NULL ptr，
+// 用来防止MGET macro继续调用m_retry的function版本，陷入无限循环
+struct mbuf *m_retry(int i, int t)
 {
 	register struct mbuf *m;
 
@@ -146,7 +148,14 @@ void m_reclaim()
  * These are also available as macros
  * for critical paths.
  */
-struct mbuf *m_get(nowait, type) int nowait, type;
+// 为mbuf结构分配内存
+// 这个调用表明参数nowait的值为M_WAIT或M_DONTWAIT
+// 它取决于在存储器不可用时，是否要求等待
+// 当插口层请求分配一个mbuf来存储sendto系统调用的目标地址时，它指定M_WAIT，因为在此阻塞是没有问题
+// 但是当以太网设备驱动程序请求分配一个mbuf来存储一个接收的帧时,它指定M_DONTWAIT
+// 因为它是作为一个设备中断处理来执行的，不能进入睡眠状态来等待一个mbuf
+// 在这种情况下，若存储器不可用，设备驱动程序丢弃这个帧比较好
+struct mbuf *m_get(int nowait, int type)
 {
 	register struct mbuf *m;
 
